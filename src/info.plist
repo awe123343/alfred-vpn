@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bundleid</key>
+	<string>com.custom.vpn-controller</string>
+	<key>category</key>
+	<string>Tools</string>
+	<key>connections</key>
+	<dict>
+		<key>1049A4F8-86E7-40DD-87FE-677CE600603F</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>26DA2609-8A71-4F58-B9BF-DFD55318CC6D</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>26DA2609-8A71-4F58-B9BF-DFD55318CC6D</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>C5544689-113F-4CB1-B0FE-0F34CACE99A2</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>778AE989-079D-431A-BE6A-776BCB3F4D0F</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>C5544689-113F-4CB1-B0FE-0F34CACE99A2</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+	</dict>
+	<key>createdby</key>
+	<string>Custom VPN Controller</string>
+	<key>description</key>
+	<string>A workflow to manage L2TP VPN connections using scutil</string>
+	<key>disabled</key>
+	<false/>
+	<key>name</key>
+	<string>VPN Controller</string>
+	<key>objects</key>
+	<array>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>0</integer>
+				<key>script</key>
+				<string># Parse the argument (action|vpn_name)
+IFS='|' read -r action vpn_name &lt;&lt;&lt; "$1"
+
+if [ "$action" = "connect" ]; then
+    echo "Connecting to VPN: $vpn_name"
+    echo "Executing command: scutil --nc start \"$vpn_name\" --secret \"$VPN_SECRET\""
+    scutil --nc start "$vpn_name" --secret %up3r50n!c
+ 
+    if [ $? -eq 0 ]; then
+        echo "Command executed successfully, checking connection status..."
+        sleep 3
+        
+        # Check actual connection status
+        status=$(scutil --nc status "$vpn_name" 2&gt;/dev/null | head -1)
+        echo "Current status: $status"
+        
+        if echo "$status" | grep -q "Connected"; then
+            echo "Successfully connected to $vpn_name"
+        elif echo "$status" | grep -q "Connecting"; then
+            echo "VPN is connecting, please wait..."
+            sleep 5
+            final_status=$(scutil --nc status "$vpn_name" 2&gt;/dev/null | head -1)
+            if echo "$final_status" | grep -q "Connected"; then
+                echo "Successfully connected to $vpn_name"
+            else
+                echo "VPN connection timed out or failed"
+                echo "Final status: $final_status"
+                exit 1
+            fi
+        else
+            echo "VPN connection failed"
+            echo "Status: $status"
+            exit 1
+        fi
+    else
+        echo "Failed to execute connection command"
+        exit 1
+    fi
+elif [ "$action" = "disconnect" ]; then
+    echo "Disconnecting from VPN: $vpn_name"
+    echo "Executing command: scutil --nc stop \"$vpn_name\""
+    scutil --nc stop "$vpn_name"
+    
+    if [ $? -eq 0 ]; then
+        echo "Command executed successfully, checking disconnection status..."
+        sleep 2
+        
+        status=$(scutil --nc status "$vpn_name" 2&gt;/dev/null | head -1)
+        echo "Current status: $status"
+        
+        if echo "$status" | grep -q "Disconnected"; then
+            echo "Successfully disconnected from $vpn_name"
+        else
+            echo "Disconnection may still be in progress"
+            echo "Status: $status"
+        fi
+    else
+        echo "Failed to execute disconnection command"
+        exit 1
+    fi
+else
+    echo "Invalid action: $action"
+    exit 1
+fi</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>26DA2609-8A71-4F58-B9BF-DFD55318CC6D</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>alfredfiltersresults</key>
+				<false/>
+				<key>alfredfiltersresultsmatchmode</key>
+				<integer>0</integer>
+				<key>argumenttreatemptyqueryasnil</key>
+				<true/>
+				<key>argumenttrimmode</key>
+				<integer>0</integer>
+				<key>argumenttype</key>
+				<integer>0</integer>
+				<key>escaping</key>
+				<integer>102</integer>
+				<key>keyword</key>
+				<string>vpn</string>
+				<key>queuedelaycustom</key>
+				<integer>3</integer>
+				<key>queuedelayimmediatelyinitially</key>
+				<true/>
+				<key>queuedelaymode</key>
+				<integer>0</integer>
+				<key>queuemode</key>
+				<integer>1</integer>
+				<key>runningsubtext</key>
+				<string>Loading...</string>
+				<key>script</key>
+				<string># VPN Manager Script Filter
+query=$(echo "$1" | tr -s '[:blank:]' | tr '[:upper:]' '[:lower:]')
+
+# Get list of VPN connections
+vpn_list=$(scutil --nc list 2&gt;/dev/null)
+
+echo "&lt;?xml version='1.0'?&gt;"
+echo "&lt;items&gt;"
+
+if [ -z "$vpn_list" ]; then
+	echo "&lt;item arg='' valid='no'&gt;&lt;title&gt;No VPN connections found&lt;/title&gt;&lt;subtitle&gt;Make sure you have L2TP VPN connections configured in System Preferences&lt;/subtitle&gt;&lt;/item&gt;"
+else
+	# Parse VPN list
+	echo "$vpn_list" | while IFS= read -r line; do
+		# Skip empty lines
+		if [ -z "$line" ]; then
+			continue
+		fi
+		
+		# Extract VPN name (in quotes)
+		vpn_name=$(echo "$line" | sed -n 's/.*"\([^"]*\)".*/\1/p')
+		
+		if [ -z "$vpn_name" ]; then
+			continue
+		fi
+		
+		# Check if query matches VPN name (case insensitive)
+		if [ -z "$query" ] || echo "$vpn_name" | tr '[:upper:]' '[:lower:]' | grep -q "$query"; then
+			# Get connection status
+			status=$(scutil --nc status "$vpn_name" 2&gt;/dev/null | head -1)
+			
+			# Determine status and action
+			if echo "$status" | grep -q "Connected"; then
+				status_text="Connected"
+				action="disconnect"
+				action_text="Disconnect"
+				icon="🟢"
+			else
+				status_text="Disconnected"
+				action="connect"
+				action_text="Connect"
+				icon="🔴"
+			fi
+			
+			# Create argument with action and VPN name
+			arg="${action}|${vpn_name}"
+			
+			echo "&lt;item arg='${arg}' valid='yes'&gt;"
+			echo "&lt;title&gt;${icon} ${vpn_name}&lt;/title&gt;"
+			echo "&lt;subtitle&gt;${status_text} - Press Enter to ${action_text}&lt;/subtitle&gt;"
+			echo "&lt;icon&gt;vpn.png&lt;/icon&gt;"
+			echo "&lt;/item&gt;"
+		fi
+	done
+fi
+
+echo "&lt;/items&gt;"
+</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>subtext</key>
+				<string>Select a VPN connection to manage</string>
+				<key>title</key>
+				<string>VPN Controller - Type to search connections</string>
+				<key>type</key>
+				<integer>0</integer>
+				<key>withspace</key>
+				<true/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.scriptfilter</string>
+			<key>uid</key>
+			<string>1049A4F8-86E7-40DD-87FE-677CE600603F</string>
+			<key>version</key>
+			<integer>3</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>0</integer>
+				<key>script</key>
+				<string># THESE VARIABLES MUST BE SET. SEE THE ONEUPDATER README FOR AN EXPLANATION OF EACH.
+readonly remote_info_plist='https://raw.githubusercontent.com/custom/vpn-controller/master/src/info.plist'
+readonly workflow_url='custom/vpn-controller'
+readonly download_type='github_release'
+readonly frequency_check='7'
+
+# FROM HERE ON, CODE SHOULD BE LEFT UNTOUCHED!
+function abort {
+  echo "${1}" &gt;&amp;2
+  exit 1
+}
+
+function url_exists {
+  curl --silent --location --output /dev/null --fail --range 0-0 "${1}"
+}
+
+function notification {
+  readonly local notificator="$(find . -type d -name 'Notificator.app')"
+  if [[ -n "${notificator}" ]]; then
+    "${notificator}/Contents/Resources/Scripts/notificator" --message "${1}" --title "${alfred_workflow_name}" --subtitle 'A new version is available'
+    return
+  fi
+
+  readonly local terminal_notifier="$(find . -type f -name 'terminal-notifier')"
+  if [[ -n "${terminal_notifier}" ]]; then
+    "${terminal_notifier}" -title "${alfred_workflow_name}" -subtitle 'A new version is available' -message "${1}"
+    return
+  fi
+
+  osascript -e "display notification \"${1}\" with title \"${alfred_workflow_name}\" subtitle \"A new version is available\""
+}
+
+# Local sanity checks
+readonly local_info_plist='info.plist'
+readonly local_version="$(/usr/libexec/PlistBuddy -c 'print version' "${local_info_plist}")"
+
+[[ -n "${local_version}" ]] || abort 'You need to set a workflow version in the configuration sheet.'
+[[ "${download_type}" =~ ^(direct|page|github_release)$ ]] || abort "'download_type' (${download_type}) needs to be one of 'direct', 'page', or 'github_release'."
+[[ "${frequency_check}" =~ ^[0-9]+$ ]] || abort "'frequency_check' (${frequency_check}) needs to be a number."
+
+# Check for updates
+if [[ $(find "${local_info_plist}" -mtime +"${frequency_check}"d) ]]; then
+  if ! url_exists "${remote_info_plist}"; then abort "'remote_info_plist' (${remote_info_plist}) appears to not be reachable."; fi # Remote sanity check
+
+  readonly tmp_file="$(mktemp)"
+  curl --silent --location --output "${tmp_file}" "${remote_info_plist}"
+  readonly remote_version="$(/usr/libexec/PlistBuddy -c 'print version' "${tmp_file}")"
+
+  if [[ "${local_version}" == "${remote_version}" ]]; then
+    touch "${local_info_plist}" # Reset timer by touching local file
+    exit 0
+  fi
+
+  if [[ "${download_type}" == 'page' ]]; then
+    notification 'Opening download page…'
+    open "${workflow_url}"
+    exit 0
+  fi
+
+  download_url="$([[ "${download_type}" == 'github_release' ]] &amp;&amp; curl --silent "https://api.github.com/repos/${workflow_url}/releases/latest" | grep 'browser_download_url' | head -1 | sed -E 's/.*browser_download_url": "(.*)"/\1/' || echo "${workflow_url}")"
+
+  if url_exists "${download_url}"; then
+    notification 'Downloading and installing…'
+    curl --silent --location --output "${HOME}/Downloads/${alfred_workflow_name}.alfredworkflow" "${download_url}"
+    open "${HOME}/Downloads/${alfred_workflow_name}.alfredworkflow"
+  else
+    abort "'workflow_url' (${download_url}) appears to not be reachable."
+  fi
+fi</string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string></string>
+				<key>type</key>
+				<integer>0</integer>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.script</string>
+			<key>uid</key>
+			<string>C5544689-113F-4CB1-B0FE-0F34CACE99A2</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+	</array>
+	<key>readme</key>
+	<string>An Alfred workflow to manage L2TP VPN connections using scutil
+
+Usage
+Type 'vpn' to list available VPN connections and manage them.
+
+Features
+- List all available L2TP VPN connections
+- Connect/disconnect VPN connections
+- View connection status</string>
+	<key>uidata</key>
+	<dict>
+		<key>06B09CC4-667A-4041-8E57-B89912E3E931</key>
+		<dict>
+			<key>xpos</key>
+			<real>270</real>
+			<key>ypos</key>
+			<real>170</real>
+		</dict>
+		<key>1049A4F8-86E7-40DD-87FE-677CE600603F</key>
+		<dict>
+			<key>xpos</key>
+			<real>45</real>
+			<key>ypos</key>
+			<real>50</real>
+		</dict>
+		<key>26DA2609-8A71-4F58-B9BF-DFD55318CC6D</key>
+		<dict>
+			<key>xpos</key>
+			<real>270</real>
+			<key>ypos</key>
+			<real>50</real>
+		</dict>
+		<key>778AE989-079D-431A-BE6A-776BCB3F4D0F</key>
+		<dict>
+			<key>xpos</key>
+			<real>270</real>
+			<key>ypos</key>
+			<real>290</real>
+		</dict>
+		<key>C5544689-113F-4CB1-B0FE-0F34CACE99A2</key>
+		<dict>
+			<key>colorindex</key>
+			<integer>12</integer>
+			<key>note</key>
+			<string>OneUpdater</string>
+			<key>xpos</key>
+			<real>545</real>
+			<key>ypos</key>
+			<real>170</real>
+		</dict>
+	</dict>
+	<key>userconfigurationconfig</key>
+	<array/>
+	<key>version</key>
+	<string>0.0.1</string>
+	<key>webaddress</key>
+	<string>https://github.com/awe123343/vpn-controller</string>
+</dict>
+</plist>
