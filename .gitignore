@@ -8,6 +8,10 @@
 
 .DS_Store
 
+build
+
+*.alfredworkflow
+
 # Local History for Visual Studio Code
 .history/
 
